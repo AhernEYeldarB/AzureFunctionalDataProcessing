@@ -265,9 +265,5 @@ __pycache__/
 
 # Local Blobstorage files
 azurite/**/*
-azurite/__azurite_db_blob_extent__.json
-azurite/__azurite_db_queue__.json
-azurite/__azurite_db_queue_extent__.json
-azurite/__azurite_db_blob__.json
 
 desktop.ini
