@@ -20,75 +20,60 @@ namespace Company.Function
         [FunctionName("beginPipeline")]
         public static async Task<List<string>> RunOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context,
+            [Blob("test1/random-personal-info1.json", FileAccess.Read, Connection = "AzureWebJobsStorage")] Stream InStream,
             ILogger log
             )
         {
             var outputs = new List<string>();
 
-            Human h = context.GetInput<Human>();
+            IEnumerable<Human> humans = getHumanIterable(InStream);
 
-            if (h != null)
+            // Begin pipeline
+            foreach (Human h in humans)
             {
-                await context.CallActivityAsync<Human>("printParsedJson", h);
+                Human tempH = await context.CallActivityAsync<Human>("printObjectPropertiesSensor", h);
+                log.LogInformation($"{h.greeting}");
             }
-            // outputs.Add(await context.CallActivityAsync<string>("parseBlobJson", "Seattle"));
-            // outputs.Add(await context.CallActivityAsync<string>("parseBlobJson", "London"));
 
-            // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
             return outputs;
         }
 
-        [FunctionName("printParsedJson")]
-        public static void printHumanIdentityClassa([ActivityTrigger] Human h, ILogger log)
+        [FunctionName("printObjectPropertiesSensor")]
+        public static Human printHumanIdentityClassa([ActivityTrigger] Human h, ILogger log)
         {
-            log.LogInformation($"\n**************\n${h.greeting}\n");
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(h))
             {
                 string n = descriptor.Name;
                 object value = descriptor.GetValue(h);
                 log.LogInformation($"${n}=${value}");
             }
+            return h;
         }
 
-        [FunctionName("readFromBlob1_HttpStart")]
+        [FunctionName("HttpPipelineTrigger")]
         public static async Task HttpStart(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] BlobInfo info,
-            [Blob("test1/{filename}", FileAccess.Read, Connection = "AzureWebJobsStorage")] Stream InStream,
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger log)
         {
             // Function input comes from the request content.
-            log.LogInformation($"C# Blob trigger function Processed blob name: ${info}");
-            if (InStream != null)
-            {
-                byte[] streamAsByteArray = ReadAllBytes(InStream);
-                string parsedStream = Regex.Replace(Encoding.UTF8.GetString(streamAsByteArray, 0, streamAsByteArray.Length), @"\s+", "");
-                log.LogInformation($"C# Blob trigger function Processed blob\n Name:{info} \n Size: {streamAsByteArray.Length} Bytes, value: {streamAsByteArray} = {parsedStream}");
-                HumanIdentity humans = JsonConvert.DeserializeObject<HumanIdentity>(parsedStream);
-                foreach (Human h in humans.data)
-                {
-                    string instanceId = await starter.StartNewAsync("beginPipeline", h); // Calling orchestrator
-                    log.LogInformation($"Started orchestration with ID = '${instanceId}'.");
-                }
-
-            }
+            string instanceId = await starter.StartNewAsync("beginPipeline", info); // Calling orchestrator
+            log.LogInformation($"Started orchestration with ID = '${instanceId}'.");
 
             // return starter.CreateCheckStatusResponse(req, instanceId);
         }
-
-        public static byte[] ReadAllBytes(Stream instream)
+        public static IEnumerable<Human> getHumanIterable(Stream s)
         {
-            if (instream is MemoryStream)
-                return ((MemoryStream)instream).ToArray();
-
-            using (var memoryStream = new MemoryStream())
-            {
-                instream.CopyTo(memoryStream);
-                return memoryStream.ToArray();
-            }
+            // Create JSON generator
+            var regex = new Regex(@"^\[\d+\]$");
+            IEnumerable<Human> iterableHumans;
+            StreamReader sr = new StreamReader(s);
+            JsonReader reader = new JsonTextReader(sr);
+            iterableHumans = reader.SelectTokensWithRegex<Human>(regex);
+            return iterableHumans;
         }
-
     }
+
     public class BlobInfo
     {
         public string filename { get; set; }
@@ -124,5 +109,23 @@ namespace Company.Function
         public List<HumanIdentity> HumanIdentities { get; set; }
         public string greeting { get; set; }
         public string favoriteFruit { get; set; }
+    }
+    // https://stackoverflow.com/questions/43747477/how-to-parse-huge-json-file-as-stream-in-json-net
+    public static class JsonReaderExtensions
+    {
+        // Returns an iterable that yields JSON objects from the structure given in the regex. In this case [ { obj1 }, { obj2 } ]
+        public static IEnumerable<T> SelectTokensWithRegex<T>(
+            this JsonReader jsonReader, Regex regex)
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            while (jsonReader.Read())
+            {
+                if (regex.IsMatch(jsonReader.Path)
+                    && jsonReader.TokenType != JsonToken.PropertyName)
+                {
+                    yield return serializer.Deserialize<T>(jsonReader);
+                }
+            }
+        }
     }
 }
