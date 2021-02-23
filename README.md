@@ -18,17 +18,21 @@ Using this tool files can be uploaded and passed to the blob trigger.
 
 # 3. Find or Generate your JSON data to Process in the Pipeline
 
-<p> Random Json Objects can be generated here <a href="https://www.json-generator.com/#"> </p>
+<p>
+    <a href="https://www.json-generator.com/#"> You can generate random JSON obejcts here</a>
+</p>
 
 # 4. Generate a C\# class that will act as a model for the dataset
 <p>
-Pass the JSON data above through here to generate the model to avoid having to constuct the class manually.
-<a href="https://json2csharp.com/">
-
-Add this class to your blob trigger C# file.
+    <a href="https://json2csharp.com/">
+    Pass the JSON data above through here to generate the model to avoid having to constuct the class manually.
+    </a>
+    Add this class to your blob trigger C# file.
 </p>
 
-
-curl http://localhost:7071/api/readFromBlob1_HttpStart -d "{"filename": "random-personal-info1.json"}"
-
 # 5. Create your pipeline
+
+# 6. Call your function once uploaded using a post request with the blob filename and pipeline WIP
+```bash
+curl http://localhost:7071/api/HttpPipelineTrigger -d "{"filename": "random-personal-info1.json"}"
+```
