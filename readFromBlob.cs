@@ -39,7 +39,7 @@ namespace Company.Function
         }
 
         [FunctionName("printObjectPropertiesSensor")]
-        public static Human printHumanIdentityClassa([ActivityTrigger] Human h, ILogger log)
+        public static Human printHumanIdentityProperties([ActivityTrigger] Human h, ILogger log)
         {
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(h))
             {
