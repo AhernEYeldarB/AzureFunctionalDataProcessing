@@ -37,7 +37,7 @@ namespace Company.Function
             };
             return returnFunc;
         }
-        public static Func<IEnumerable, IEnumerable> chainGen(params Func<IEnumerable, IEnumerable>[] a)
+        public static Func<IEnumerable, IEnumerable> pipelineMaker(params Func<IEnumerable, IEnumerable>[] a)
         {
             IEnumerable returnFunc(IEnumerable ip)
             {

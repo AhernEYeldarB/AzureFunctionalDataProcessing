@@ -40,6 +40,10 @@ namespace Company.Function
             IEnumerable<Row> humans = JsonReaderExtensions.convertToJsonIterable(InStream);
             IEnumerable<Pipe> pipeline = JsonReaderExtensions.convertToJsonIterable(info.pipeline);
 
+            Func<IEnumerable, IEnumerable> pipeline = Activities.pipelineMaker(
+                Activities.eachMaker(),
+                Activities.filterMaker(filterPredicate)
+            );
             // Prepare Output stream writer
             using (JsonTextWriter wr = JsonReaderExtensions.InitJsonOutStream(OutStream))
             {
