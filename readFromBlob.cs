@@ -41,23 +41,35 @@ namespace Company.Function
             IEnumerable<Row> humans = JsonReaderExtensions.convertToJsonIterable(InStream);
             // IEnumerable<Pipe> pipeline = JsonReaderExtensions.convertToJsonIterable(info.pipeline);
 
-            Func<Row, bool> filterPredicate = value =>
+
+            Func<Row, object> mapFunction = value =>
+            {
+                var obj = new
+                {
+                    name = value.name,
+                    eyeColor = value.eyeColor
+                };
+                return obj;
+            };
+
+            Func<dynamic, bool> filterPredicate = value =>
             {
                 return value.eyeColor == "green";
             };
 
             Func<IEnumerable, IEnumerable> pipeline = Activities.pipelineMaker(
+                Activities.mapMaker<Row, dynamic>(mapFunction),
                 Activities.eachMaker(),
                 Activities.filterMaker(filterPredicate)
             );
+
             // Prepare Output stream writer
             using (JsonTextWriter wr = JsonReaderExtensions.InitJsonOutStream(OutStream))
             {
                 wr.WriteStartArray();
-                foreach (Row h in pipeline(humans))
+                foreach (var h in pipeline(humans))
                 {
-                    log.LogInformation($"{h.name}");
-                    wr.SerialiseJsonToStream<Row>(h);
+                    wr.SerialiseJsonToStream<dynamic>(h);
                 }
                 wr.WriteEndArray();
             }

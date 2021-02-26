@@ -32,8 +32,7 @@ namespace Company.Function
         {
             JsonSerializer serializer = new JsonSerializer();
             serializer.Serialize(jsonWriter,
-                                 value,
-                                 value.GetType());
+                                 value);
         }
 
         public static JsonTextWriter InitJsonOutStream(Stream s)
