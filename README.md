@@ -52,7 +52,7 @@ For example, a pipeline that take a foreach with no callback (Essentially a pass
         return obj;
     };
 
-    Func<Row, bool> filterPredicate = value =>
+    Func<dynamic, bool> filterPredicate = value =>
     {
         return value.music == "loud";
     };
