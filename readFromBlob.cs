@@ -1,15 +1,11 @@
 using System.Collections.Generic;
 using System;
 using System.IO;
-using System.Net.Http;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -25,21 +21,41 @@ namespace Company.Function
             )
         {
             var outputs = new List<string>();
+            BlobInfo info = context.GetInput<BlobInfo>();
 
-            IEnumerable<Human> humans = getHumanIterable(InStream);
-
-            // Begin pipeline
-            foreach (Human h in humans)
-            {
-                Human tempH = await context.CallActivityAsync<Human>("printObjectPropertiesSensor", h);
-                log.LogInformation($"{h.greeting}");
-            }
+            bool test = await context.CallActivityAsync<bool>("simpleActivity", info);
 
             return outputs;
         }
 
+        [FunctionName("simpleActivity")]
+        public static bool simpleActivity([ActivityTrigger] BlobInfo info,
+        ILogger log,
+        [Blob("test1/{info.filename}", FileAccess.Read, Connection = "AzureWebJobsStorage")] Stream InStream,
+        [Blob("test1/output-{info.filename}", FileAccess.Write, Connection = "AzureWebJobsStorage")] Stream OutStream
+        )
+        {
+            // Create Pipe and JSON blob stream
+            IEnumerable<Row> humans = JsonReaderExtensions.convertToJsonIterable(InStream);
+            IEnumerable<Pipe> pipeline = JsonReaderExtensions.convertToJsonIterable(info.pipeline);
+
+            // Prepare Output stream writer
+            using (JsonTextWriter wr = JsonReaderExtensions.InitJsonOutStream(OutStream))
+            {
+                wr.WriteStartArray();
+                foreach (Row h in Activities.passthrough<Row>(Activities.greenEyesOnlyFilter(humans)))
+                {
+                    wr.SerialiseJsonToStream<Row>(h);
+                }
+                wr.WriteEndArray();
+            }
+
+
+            return true;
+        }
+
         [FunctionName("printObjectPropertiesSensor")]
-        public static Human printHumanIdentityProperties([ActivityTrigger] Human h, ILogger log)
+        public static Row printObjectPropertiesSensor([ActivityTrigger] Row h, ILogger log)
         {
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(h))
             {
@@ -62,30 +78,29 @@ namespace Company.Function
 
             // return starter.CreateCheckStatusResponse(req, instanceId);
         }
-        public static IEnumerable<Human> getHumanIterable(Stream s)
-        {
-            // Create JSON generator
-            var regex = new Regex(@"^\[\d+\]$");
-            IEnumerable<Human> iterableHumans;
-            StreamReader sr = new StreamReader(s);
-            JsonReader reader = new JsonTextReader(sr);
-            iterableHumans = reader.SelectTokensWithRegex<Human>(regex);
-            return iterableHumans;
-        }
     }
 
     public class BlobInfo
     {
         public string filename { get; set; }
-    }
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
-    // Used as an ORM layer 
-    public class HumanIdentity
-    {
-        public List<Human> data { get; set; }
+        public string pipeline { get; set; }
     }
 
-    public class Human
+    public class Pipe
+    {
+        public string type { get; set; }
+        public string callback { get; set; }
+    }
+
+    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
+    // Used as an ORM layer 
+    public class Friend
+    {
+        public int id { get; set; }
+        public string name { get; set; }
+    }
+
+    public class Row
     {
         public string _id { get; set; }
         public int index { get; set; }
@@ -106,26 +121,8 @@ namespace Company.Function
         public double latitude { get; set; }
         public double longitude { get; set; }
         public List<string> tags { get; set; }
-        public List<HumanIdentity> HumanIdentities { get; set; }
+        public List<Friend> friends { get; set; }
         public string greeting { get; set; }
         public string favoriteFruit { get; set; }
-    }
-    // https://stackoverflow.com/questions/43747477/how-to-parse-huge-json-file-as-stream-in-json-net
-    public static class JsonReaderExtensions
-    {
-        // Returns an iterable that yields JSON objects from the structure given in the regex. In this case [ { obj1 }, { obj2 } ]
-        public static IEnumerable<T> SelectTokensWithRegex<T>(
-            this JsonReader jsonReader, Regex regex)
-        {
-            JsonSerializer serializer = new JsonSerializer();
-            while (jsonReader.Read())
-            {
-                if (regex.IsMatch(jsonReader.Path)
-                    && jsonReader.TokenType != JsonToken.PropertyName)
-                {
-                    yield return serializer.Deserialize<T>(jsonReader);
-                }
-            }
-        }
     }
 }
