@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 using Newtonsoft.Json;
 
-[assembly: InternalsVisibleTo("readFromBlob")]
+[assembly: InternalsVisibleTo("../readFromBlob")]
 
 namespace Company.Function
 {
@@ -25,6 +25,8 @@ namespace Company.Function
                 }
             }
         }
+
+        // https://stackoverflow.com/questions/18269958/writing-json-to-a-stream-without-buffering-the-string-in-memory
         public static void SerialiseJsonToStream<T>(
             this JsonTextWriter jsonWriter, object value)
         {
