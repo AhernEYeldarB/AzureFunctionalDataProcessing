@@ -31,8 +31,38 @@ Using this tool files can be uploaded and passed to the blob trigger.
 </p>
 
 # 5. Create your pipeline
+You will need:
+1. An `IEnumerable` type to be the input to the pipeline
+2. A set of pipeline activites that are to be chained together using `pipelineMaker` function.
+    * This function returns a function which is where you pass in `IEnumerable` your input
+
+For example, a pipeline that take a foreach with no callback (Essentially a passthrough that does nothing) and a filter that returns the rows where "row = {music : 'loud'}"
+```c#
+    // Some incoming object that is IEnumerable
+    IEnumerable InStream;
+
+    Func<Row, bool> filterPredicate = value =>
+    {
+        return value.music == "loud";
+    };
+
+    Func<IEnumerable, IEnumerable> pipeline = Activities.pipelineMaker(
+        Activities.eachMaker(),
+        Activities.filterMaker(filterPredicate)
+    );
+
+    foreach (Row h in pipeline(InStream))
+    {
+        // Do something with resulting row
+    }
+```
 
 # 6. Call your function once uploaded using a post request with the blob filename and pipeline WIP
+* Bash 
 ```bash
-curl http://localhost:7071/api/HttpPipelineTrigger -d "{"filename": "random-personal-info1.json"}"
+curl http://localhost:7071/api/HttpPipelineTrigger -d "{'filename': 'random-personal-info1.json','pipeline': '[]'}"
+```
+* Powershell
+```PowerShell
+Invoke-RestMethod -Method "Post" -URI "http://localhost:7071/api/HttpPipelineTrigger" -Body "{filename : 'random-personal-info1.json', pipeline : '[]'}"
 ```
