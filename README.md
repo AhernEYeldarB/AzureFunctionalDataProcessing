@@ -41,17 +41,29 @@ For example, a pipeline that take a foreach with no callback (Essentially a pass
     // Some incoming object that is IEnumerable
     IEnumerable InStream;
 
+
+    Func<Row, object> mapFunction = value =>
+    {
+        var obj = new
+        {
+            name = value.name,
+            band = value.band + " cover band"
+        };
+        return obj;
+    };
+
     Func<Row, bool> filterPredicate = value =>
     {
         return value.music == "loud";
     };
 
     Func<IEnumerable, IEnumerable> pipeline = Activities.pipelineMaker(
+        Activities.mapMaker<Row, dynamic>(mapFunction),
         Activities.eachMaker(),
         Activities.filterMaker(filterPredicate)
     );
 
-    foreach (Row h in pipeline(InStream))
+    foreach (var h in pipeline(InStream))
     {
         // Do something with resulting row
     }
