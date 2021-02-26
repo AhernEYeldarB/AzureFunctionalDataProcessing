@@ -24,13 +24,14 @@ namespace Company.Function
             var outputs = new List<string>();
             BlobInfo info = context.GetInput<BlobInfo>();
 
-            bool test = await context.CallActivityAsync<bool>("simpleActivity", info);
+            // True on completion does not mean successful
+            bool test = await context.CallActivityAsync<bool>("mainActivity", info);
 
             return outputs;
         }
 
-        [FunctionName("simpleActivity")]
-        public static bool simpleActivity([ActivityTrigger] BlobInfo info,
+        [FunctionName("mainActivity")]
+        public static bool mainActivity([ActivityTrigger] BlobInfo info,
         ILogger log,
         [Blob("test1/{info.filename}", FileAccess.Read, Connection = "AzureWebJobsStorage")] Stream InStream,
         [Blob("test1/output-{info.filename}", FileAccess.Write, Connection = "AzureWebJobsStorage")] Stream OutStream
@@ -38,7 +39,12 @@ namespace Company.Function
         {
             // Create Pipe and JSON blob stream
             IEnumerable<Row> humans = JsonReaderExtensions.convertToJsonIterable(InStream);
-            IEnumerable<Pipe> pipeline = JsonReaderExtensions.convertToJsonIterable(info.pipeline);
+            // IEnumerable<Pipe> pipeline = JsonReaderExtensions.convertToJsonIterable(info.pipeline);
+
+            Func<Row, bool> filterPredicate = value =>
+            {
+                return value.eyeColor == "green";
+            };
 
             Func<IEnumerable, IEnumerable> pipeline = Activities.pipelineMaker(
                 Activities.eachMaker(),
@@ -48,14 +54,13 @@ namespace Company.Function
             using (JsonTextWriter wr = JsonReaderExtensions.InitJsonOutStream(OutStream))
             {
                 wr.WriteStartArray();
-                foreach (Row h in Activities.passthrough<Row>(Activities.greenEyesOnlyFilter(humans)))
+                foreach (Row h in pipeline(humans))
                 {
+                    log.LogInformation($"{h.name}");
                     wr.SerialiseJsonToStream<Row>(h);
                 }
                 wr.WriteEndArray();
             }
-
-
             return true;
         }
 
