@@ -23,6 +23,7 @@ namespace Company.Function
             };
             return returnFunc;
         }
+
         public static Func<IEnumerable, IEnumerable> filterMaker<T>(Func<T, bool> callback)
         {
             IEnumerable returnFunc(IEnumerable ip)
@@ -51,5 +52,4 @@ namespace Company.Function
             return returnFunc;
         }
     }
-
 }
