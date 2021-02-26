@@ -38,6 +38,17 @@ namespace Company.Function
             };
             return returnFunc;
         }
+        public static Func<IEnumerable, IEnumerable> mapMaker<T, U>(Func<T, U> callback)
+        {
+            IEnumerable returnFunc(IEnumerable ip)
+            {
+                foreach (T r in ip)
+                {
+                    yield return callback(r);
+                }
+            };
+            return returnFunc;
+        }
         public static Func<IEnumerable, IEnumerable> pipelineMaker(params Func<IEnumerable, IEnumerable>[] a)
         {
             IEnumerable returnFunc(IEnumerable ip)
