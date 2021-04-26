@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Linq;
 
 [assembly: InternalsVisibleTo("../readFromBlob")]
 
@@ -51,6 +52,76 @@ namespace Company.Function
             return returnFunc;
         }
 
+        public static Func<IEnumerable, IEnumerable> topNMaker<T>(int n)
+        {
+            IEnumerable returnFunc(IEnumerable source)
+            {
+                int i = 0;
+                foreach (T r in source)
+                {
+
+                    yield return r;
+                    if (++i >= n)
+                    {
+                        break;
+                    }
+                }
+            }
+            return returnFunc;
+        }
+
+        public static Func<IEnumerable, IEnumerable> concatMaker<T>(IEnumerable concatSource)
+        {
+            IEnumerable returnFunc(IEnumerable source)
+            {
+                foreach (T r in source)
+                {
+                    yield return r;
+                    yield return concatSource;
+                }
+            }
+            return returnFunc;
+        }
+
+        public static Func<IEnumerable, IEnumerable> enumumerateMaker<T>()
+        {
+            IEnumerable returnFunc(IEnumerable source)
+            {
+                int i = -1;
+                foreach (T r in source)
+                {
+                    yield return new Tuple<int, T>(++i, r);
+                }
+            }
+            return returnFunc;
+        }
+
+        public static Func<IEnumerable, IEnumerable> skipMaker<T>(int n)
+        {
+            IEnumerable returnFunc(IEnumerable source)
+            {
+                int i = -1;
+                foreach (T r in source)
+                {
+                    if (++i >= 0)
+                    {
+                        yield return r;
+                    }
+                }
+            }
+            return returnFunc;
+        }
+
+        public static Func<ArrayList, ArrayList> concatMaker<T>(IComparer comparison)
+        {
+            // Blocking implementation will require data to be buffered into an array first
+            ArrayList returnFunc(ArrayList source)
+            {
+                source.Sort(comparison);
+                return source;
+            }
+            return returnFunc;
+        }
         public static Func<IEnumerable, IEnumerable> pipelineMaker(params Func<IEnumerable, IEnumerable>[] a)
         {
             IEnumerable returnFunc(IEnumerable source)
