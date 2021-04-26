@@ -10,9 +10,9 @@ namespace Company.Function
     {
         public static Func<IEnumerable, IEnumerable> eachMaker(Action<object>? callback = null)
         {
-            IEnumerable returnFunc(IEnumerable ip)
+            IEnumerable returnFunc(IEnumerable source)
             {
-                foreach (object r in ip)
+                foreach (object r in source)
                 {
                     if (callback != null)
                     {
@@ -26,9 +26,9 @@ namespace Company.Function
 
         public static Func<IEnumerable, IEnumerable> filterMaker<T>(Func<T, bool> callback)
         {
-            IEnumerable returnFunc(IEnumerable ip)
+            IEnumerable returnFunc(IEnumerable source)
             {
-                foreach (T r in ip)
+                foreach (T r in source)
                 {
                     if (callback(r))
                     {
@@ -38,22 +38,24 @@ namespace Company.Function
             };
             return returnFunc;
         }
+
         public static Func<IEnumerable, IEnumerable> mapMaker<T, U>(Func<T, U> callback)
         {
-            IEnumerable returnFunc(IEnumerable ip)
+            IEnumerable returnFunc(IEnumerable source)
             {
-                foreach (T r in ip)
+                foreach (T r in source)
                 {
                     yield return callback(r);
                 }
             };
             return returnFunc;
         }
+
         public static Func<IEnumerable, IEnumerable> pipelineMaker(params Func<IEnumerable, IEnumerable>[] a)
         {
-            IEnumerable returnFunc(IEnumerable ip)
+            IEnumerable returnFunc(IEnumerable source)
             {
-                IEnumerable tail = ip;
+                IEnumerable tail = source;
                 foreach (Func<IEnumerable, IEnumerable> activity in a)
                 {
                     tail = activity.Invoke(tail);
