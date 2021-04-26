@@ -47,6 +47,7 @@ namespace Company.Function
                 var obj = new
                 {
                     name = value.name,
+                    age = value.age + 10,
                     eyeColor = value.eyeColor
                 };
                 return obj;
