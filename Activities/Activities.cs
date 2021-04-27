@@ -3,7 +3,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Linq;
 
-[assembly: InternalsVisibleTo("../readFromBlob")]
+[assembly: InternalsVisibleTo("../Function")]
 
 namespace Company.Function
 {
@@ -112,7 +112,7 @@ namespace Company.Function
             return returnFunc;
         }
 
-        public static Func<ArrayList, ArrayList> concatMaker<T>(IComparer comparison)
+        public static Func<ArrayList, ArrayList> sortMaker<T>(IComparer comparison)
         {
             // Blocking implementation will require data to be buffered into an array first
             ArrayList returnFunc(ArrayList source)
